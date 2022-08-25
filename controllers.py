@@ -15,6 +15,7 @@ class MouseController(_MouseController):
     def __init__(self) -> None:
         super().__init__()
         self.print = True
+        self.mouse_threshold = 1
         self.mouse_speed_x = 0
         self.mouse_speed_y = 0
         self._stopped = True
@@ -23,16 +24,12 @@ class MouseController(_MouseController):
         self._monitor_thread.daemon = True
         self._monitor_thread.start()
         
-    def stop(self) -> None:
-        self._stopped = True
-
-    def start(self) -> None:
-        self._stopped = False
-
     def move(self):
-        # if self._stopped:
-        #     return
-        print(self.mouse_speed_x, self.mouse_speed_y)
+        if (
+            abs(self.mouse_speed_x) <= self.mouse_threshold
+            and abs(self.mouse_speed_y) <= self.mouse_threshold
+        ):
+            return
         super().move(
             self.mouse_speed_x,
             self.mouse_speed_y,
