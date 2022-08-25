@@ -44,7 +44,7 @@ class Mouse(_MouseController, KeyController):
         self.speed_y = 0
         self._stopped = True
         self._monitor_thread = threading.Thread(
-            target=self._monitor_controller, args=()
+            name=str(self), target=self._monitor_controller, args=()
         )
         self._monitor_thread.daemon = True
         self._monitor_thread.start()
@@ -119,7 +119,7 @@ class Gamepad:
     def __init__(self):
         self.state = {k: 0 for k in Gamepad.Key}
         self._monitor_thread = threading.Thread(
-            target=self._monitor_controller, args=(False, 2)
+            name=str(self), target=self._monitor_controller, args=(False, 2)
         )
         self._monitor_thread.daemon = True
         self._monitor_thread.start()

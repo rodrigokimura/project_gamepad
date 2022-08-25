@@ -50,6 +50,23 @@ class KeyboardButtonMapper(KeyboardMapper):
         ]
 
 
+class KeyboardButtonCombinationMapper(KeyboardMapper):
+    def __init__(
+        self,
+        gp: Gamepad,
+        kb: Keyboard,
+        gp_key: Gamepad.Key,
+        kb_keys: Collection[Keyboard.Key],
+    ) -> None:
+        super().__init__(gp, kb)
+        self._listerners = [
+            Listener(OnKeyPress(gp, [gp_key]), [PressKey(kb, key) for key in kb_keys]),
+            Listener(
+                OnKeyRelease(gp, [gp_key]), [ReleaseKey(kb, key) for key in kb_keys]
+            ),
+        ]
+
+
 class KeyboardDirectionMapper(KeyboardMapper):
     def __init__(
         self,

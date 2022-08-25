@@ -1,14 +1,17 @@
 from controllers import Gamepad, Keyboard, Mouse
 from mappers import (
+    KeyboardButtonCombinationMapper,
     KeyboardButtonMapper,
     KeyboardDirectionMapper,
     MouseButtonMapper,
     MouseDirectionMapper,
 )
+from printers import GamepadColoredPrinter
 
 
 class App:
     gp = Gamepad()
+    printer = GamepadColoredPrinter(gp)
     kb = Keyboard()
     standard_mouse = Mouse(speed_modifier=10, delay=5, sensitivity=0.01)
     fast_mouse = Mouse(speed_modifier=50, delay=1, sensitivity=0.01)
@@ -38,6 +41,15 @@ class App:
         ),
     ]
 
+    upper_buttons = [
+        KeyboardButtonCombinationMapper(
+            gp, kb, Gamepad.Key.LB, [Keyboard.Key.ctrl, Keyboard.Key.f1]
+        ),
+        KeyboardButtonCombinationMapper(
+            gp, kb, Gamepad.Key.RB, [Keyboard.Key.ctrl, Keyboard.Key.f2]
+        ),
+    ]
+
     stick = [
         MouseDirectionMapper(
             gp, standard_mouse, (Gamepad.Key.r_stick_x, Gamepad.Key.r_stick_y)
@@ -49,7 +61,7 @@ class App:
         MouseButtonMapper(gp, fast_mouse, Gamepad.Key.l_thumb, Mouse.Key.right),
     ]
 
-    mappers = modifiers + d_pad + stick
+    mappers = modifiers + d_pad + stick + upper_buttons
 
     def run(self):
         while True:
@@ -57,7 +69,7 @@ class App:
             if self.state != current_state:
                 self.state = current_state
                 if self.print_gamepad:  # TODO: use logging
-                    print(self.state)
+                    self.printer.print()
                 for listener in self.mappers:
                     listener.listen()
 

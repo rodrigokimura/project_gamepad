@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 inputs = "*"
 pynput = "*"
+colorama = "*"
 
 [dev-packages]
 black = "*"
