@@ -1,35 +1,67 @@
-from controllers import Gamepad, KeyboardController, MouseController
-from listeners.keyboard import all_listeners as keyboard_listeners
-from listeners.mouse import all_listeners as mouse_listeners
-from commands import PressKey
+from controllers import Gamepad, Keyboard, Mouse
+from mappers import (
+    KeyboardButtonMapper,
+    KeyboardDirectionMapper,
+    MouseButtonMapper,
+    MouseDirectionMapper,
+)
 
 
 class App:
     gp = Gamepad()
-    kb = KeyboardController()
-    m = MouseController()
-    
+    kb = Keyboard()
+    standard_mouse = Mouse(speed_modifier=10, delay=5, sensitivity=0.01)
+    fast_mouse = Mouse(speed_modifier=50, delay=1, sensitivity=0.01)
+
     state = {}
-    
+
     print_gamepad = True
-    print_mouse = False
-    m.print = print_mouse
-    
+
+    modifiers = [
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.A, Keyboard.Key.ctrl),
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.B, Keyboard.Key.shift),
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.X, Keyboard.Key.alt),
+    ]
+
+    special = [
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.start, Keyboard.Key.enter),
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.back, Keyboard.Key.backspace),
+        KeyboardButtonMapper(gp, kb, Gamepad.Key.center, Keyboard.Key.menu),
+    ]
+
+    d_pad = [
+        KeyboardDirectionMapper(
+            gp, kb, Gamepad.Key.H, (Keyboard.Key.left, Keyboard.Key.right)
+        ),
+        KeyboardDirectionMapper(
+            gp, kb, Gamepad.Key.V, (Keyboard.Key.up, Keyboard.Key.down)
+        ),
+    ]
+
+    stick = [
+        MouseDirectionMapper(
+            gp, standard_mouse, (Gamepad.Key.r_stick_x, Gamepad.Key.r_stick_y)
+        ),
+        MouseButtonMapper(gp, standard_mouse, Gamepad.Key.r_thumb, Mouse.Key.left),
+        MouseDirectionMapper(
+            gp, fast_mouse, (Gamepad.Key.l_stick_x, Gamepad.Key.l_stick_y)
+        ),
+        MouseButtonMapper(gp, fast_mouse, Gamepad.Key.l_thumb, Mouse.Key.right),
+    ]
+
+    mappers = modifiers + d_pad + stick
+
     def run(self):
         while True:
             current_state = self.gp.read()
             if self.state != current_state:
                 self.state = current_state
-                if self.print_gamepad:
+                if self.print_gamepad:  # TODO: use logging
                     print(self.state)
-                for listener in keyboard_listeners:
-                    listener(self.gp, self.kb)
-                for listener in mouse_listeners:
-                    listener(self.gp, self.m)
+                for listener in self.mappers:
+                    listener.listen()
 
 
-app = App()
-
-
-if __name__ == '__main__':
-    app = App().run()
+if __name__ == "__main__":
+    app = App()
+    app.run()

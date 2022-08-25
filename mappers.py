@@ -1,36 +1,91 @@
-from typing import Tuple
+from abc import ABC, abstractmethod
+from typing import Collection, Tuple
 
-from pynput.keyboard import Key as Key
-
-from controllers import Gamepad, KeyboardController, MouseController
-
-
-def binary_mapper(gp: Gamepad, kb: KeyboardController, gp_key: Gamepad.Key, kb_key: Key):
-    command_mapping = {
-        0: kb.release,
-        1: kb.press,
-    }
-    command_mapping[gp.state[gp_key]](kb_key)
+from commands import MovePointer, PressKey, ReleaseKey, StopPointer
+from controllers import Gamepad, Keyboard, Mouse
+from events import OnKeyPress, OnKeyRelease, OnKeyStateChange, OnStickMove, OnStickStop
+from listeners import Listener
 
 
-def ternary_mapper(gp: Gamepad, kb: KeyboardController, gp_key: Gamepad.Key, kb_keys: Tuple[Key, Key]):
-    command_mapping = {
-        0: (kb.release, kb_keys),
-        1: (kb.press, [kb_keys[0]]),
-        -1: (kb.press, [kb_keys[1]]),
-    }
-    cmd, keys = command_mapping[gp.state[gp_key]]
-    for k in keys:
-        cmd(k)
+class KeyboardMapper(ABC):
+
+    gp: Gamepad
+    kb: Keyboard
+    _listerners: Collection[Listener]
+
+    @abstractmethod
+    def __init__(self, gp: Gamepad, kb: Keyboard) -> None:
+        self.gp = gp
+        self.kb = kb
+
+    def listen(self) -> None:
+        for listener in self._listerners:
+            listener.listen()
 
 
-def range_mapper(gp: Gamepad, m: MouseController, gp_key: Gamepad.Key, direction: str, converter, converter_kwargs={}):
-    speed = converter(gp.state[gp_key], **converter_kwargs)
-    if direction == 'x':
-        m.mouse_speed_x = speed
-    else:
-        m.mouse_speed_y = speed
+class MouseMapper(ABC):
 
-def linear_converter(s, a):
-    signal = 1 if s > 0 else -1
-    return signal * abs(s * a)
+    gp: Gamepad
+    m: Mouse
+    _listerners: Collection[Listener]
+
+    @abstractmethod
+    def __init__(self, gp: Gamepad, m: Mouse) -> None:
+        self.gp = gp
+        self.m = m
+
+    def listen(self) -> None:
+        for listener in self._listerners:
+            listener.listen()
+
+
+class KeyboardButtonMapper(KeyboardMapper):
+    def __init__(
+        self, gp: Gamepad, kb: Keyboard, gp_key: Gamepad.Key, kb_key: Keyboard.Key
+    ) -> None:
+        super().__init__(gp, kb)
+        self._listerners = [
+            Listener(OnKeyPress(gp, [gp_key]), [PressKey(kb, kb_key)]),
+            Listener(OnKeyRelease(gp, [gp_key]), [ReleaseKey(kb, kb_key)]),
+        ]
+
+
+class KeyboardDirectionMapper(KeyboardMapper):
+    def __init__(
+        self,
+        gp: Gamepad,
+        kb: Keyboard,
+        gp_key: Gamepad.Key,
+        kb_keys: Tuple[Keyboard.Key, Keyboard.Key],
+    ) -> None:
+        super().__init__(gp, kb)
+        self._listerners = [
+            Listener(OnKeyStateChange(gp, [gp_key], -1), [PressKey(kb, kb_keys[0])]),
+            Listener(OnKeyStateChange(gp, [gp_key], 1), [PressKey(kb, kb_keys[1])]),
+            Listener(
+                OnKeyStateChange(gp, [gp_key], 0),
+                [ReleaseKey(kb, kb_keys[0]), ReleaseKey(kb, kb_keys[1])],
+            ),
+        ]
+
+
+class MouseButtonMapper(MouseMapper):
+    def __init__(
+        self, gp: Gamepad, m: Mouse, gp_key: Gamepad.Key, m_key: Mouse.Key
+    ) -> None:
+        super().__init__(gp, m)
+        self._listerners = [
+            Listener(OnKeyPress(gp, [gp_key]), [PressKey(m, m_key)]),
+            Listener(OnKeyRelease(gp, [gp_key]), [ReleaseKey(m, m_key)]),
+        ]
+
+
+class MouseDirectionMapper(MouseMapper):
+    def __init__(
+        self, gp: Gamepad, m: Mouse, stick_keys: Tuple[Gamepad.Key, Gamepad.Key]
+    ) -> None:
+        super().__init__(gp, m)
+        self._listerners = [
+            Listener(OnStickMove(gp, (stick_keys[0], stick_keys[1])), [MovePointer(m)]),
+            Listener(OnStickStop(gp, (stick_keys[0], stick_keys[1])), [StopPointer(m)]),
+        ]
