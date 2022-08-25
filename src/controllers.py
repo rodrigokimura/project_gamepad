@@ -1,13 +1,16 @@
 import enum
+import logging
 import threading
 from abc import ABC, abstractmethod
 from time import sleep
+from typing import Iterable
 
-from inputs import get_gamepad
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
+
+logger = logging.getLogger(__name__)
 
 
 class KeyController(ABC):
@@ -104,6 +107,12 @@ class Gamepad:
         l_thumb = "BTN_THUMBL"
         r_thumb = "BTN_THUMBR"
 
+        def __str__(self):
+            return str(self.value)
+
+        def __repr__(self):
+            return str(self.name)
+
     MAX_TRIG_VAL = 2**8
     MAX_JOY_VAL = 2**15
     state = {k: 0 for k in Key}
@@ -119,57 +128,27 @@ class Gamepad:
     def __init__(self):
         self.state = {k: 0 for k in Gamepad.Key}
         self._monitor_thread = threading.Thread(
-            name=str(self), target=self._monitor_controller, args=(False, 2)
+            name=str(self), target=self._monitor_controller, args=()
         )
         self._monitor_thread.daemon = True
         self._monitor_thread.start()
 
     def read(self):
-        d_pad = [self.state[Gamepad.Key.H], self.state[Gamepad.Key.V]]
-        buttons = [
-            self.state[Gamepad.Key.A],
-            self.state[Gamepad.Key.B],
-            self.state[Gamepad.Key.X],
-            self.state[Gamepad.Key.Y],
-        ]
-        special = [
-            self.state[Gamepad.Key.back],
-            self.state[Gamepad.Key.start],
-            self.state[Gamepad.Key.center],
-        ]
-        sticks = [
-            (
-                self.state[Gamepad.Key.l_stick_x],
-                self.state[Gamepad.Key.l_stick_y],
-                self.state[Gamepad.Key.l_thumb],
-            ),
-            (
-                self.state[Gamepad.Key.r_stick_x],
-                self.state[Gamepad.Key.r_stick_y],
-                self.state[Gamepad.Key.r_thumb],
-            ),
-        ]
-        upper = [
-            self.state[Gamepad.Key.LB],
-            self.state[Gamepad.Key.RB],
-            self.state[Gamepad.Key.LT],
-            self.state[Gamepad.Key.RT],
-        ]
-        d = locals()
-        del d["self"]
-        return d
+        return self.state.copy()
 
-    def _monitor_controller(self, print_ev=False, stick_precision=1) -> None:
+    def _monitor_controller(self) -> None:
 
         while True:
-            events = get_gamepad()
-            for ev in events:
-                if print_ev:  # TODO: convert this to logging
-                    print(ev.code)
-                if ev.code in Gamepad.Key:
-                    state = ev.state
-                    if ev.code in self.TO_NORMALIZE:
-                        state = round(
-                            ev.state / self.TO_NORMALIZE[ev.code], stick_precision
-                        )
-                    self.state[Gamepad.Key(ev.code)] = state
+            try:
+                from inputs import InputEvent, get_gamepad
+
+                events: Iterable[InputEvent] = get_gamepad()
+                for ev in events:
+                    logger.debug("Event: %s:%s:%s", ev.ev_type, ev.code, ev.state)
+                    if ev.code in Gamepad.Key:
+                        state = ev.state
+                        if ev.code in self.TO_NORMALIZE:
+                            state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
+                        self.state[Gamepad.Key(ev.code)] = state
+            except Exception as e:
+                logger.error(str(e))

@@ -47,7 +47,7 @@ class GamepadColoredPrinter(Printer):
         back = green_or_dim("-", self.gp.state[Gamepad.Key.back])
         center = green_or_dim("*", self.gp.state[Gamepad.Key.center])
 
-        os.system("cls||clear")
+        # os.system("cls||clear")
 
         print(f"{lt}{' ' * 7}{rt}")
         print(f"{lb}{' ' * 7}{rb}")
