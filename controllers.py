@@ -1,3 +1,4 @@
+import enum
 import threading
 from time import sleep
 
@@ -44,84 +45,83 @@ class MouseController(_MouseController):
             self.move()
 
 
-class LogitechController:
+class MetaEnum(enum.EnumMeta):
+    def __contains__(cls, item):
+        try:
+            cls(item)
+        except ValueError:
+            return False
+        return True
+
+
+class BaseEnum(enum.Enum, metaclass=MetaEnum):
+    pass
+
+class Gamepad:
+    class Key(BaseEnum):
+        A = 'BTN_SOUTH'
+        B = 'BTN_EAST'
+        X = 'BTN_NORTH'
+        Y = 'BTN_WEST'
+        H = 'ABS_HAT0X'
+        V = 'ABS_HAT0Y'
+        LB = 'BTN_TL'
+        RB = 'BTN_TR'
+        LT = 'ABS_Z'
+        RT = 'ABS_RZ'
+        start = 'BTN_START'
+        back = 'BTN_SELECT'
+        center = 'BTN_MODE'
+        l_stick_x = 'ABS_X'
+        l_stick_y = 'ABS_Y'
+        r_stick_x = 'ABS_RX'
+        r_stick_y = 'ABS_RY'
+        l_thumb = 'BTN_THUMBL'
+        r_thumb = 'BTN_THUMBR'
+
     MAX_TRIG_VAL = 2**8
     MAX_JOY_VAL = 2**15
-    MAPPING = {
-        ('Key', 'BTN_SOUTH'): 'A',
-        ('Key', 'BTN_EAST'): 'B',
-        ('Key', 'BTN_NORTH'): 'X',
-        ('Key', 'BTN_WEST'): 'Y',
-        ('Absolute', 'ABS_HAT0X'): 'H',
-        ('Absolute', 'ABS_HAT0Y'): 'V',
-        ('Key', 'BTN_TL'): 'LB',
-        ('Key', 'BTN_TR'): 'RB',
-        ('Absolute', 'ABS_Z'): 'LT',
-        ('Absolute', 'ABS_RZ'): 'RT',
-        ('Key', 'BTN_START'): 'start',
-        ('Key', 'BTN_SELECT'): 'back',
-        ('Key', 'BTN_MODE'): 'center',
-        ('Absolute', 'ABS_X'): 'l_stick_x',
-        ('Absolute', 'ABS_Y'): 'l_stick_y',
-        ('Absolute', 'ABS_RX'): 'r_stick_x',
-        ('Absolute', 'ABS_RY'): 'r_stick_y',
-        ('Key', 'BTN_THUMBL'): 'l_thumb',
-        ('Key', 'BTN_THUMBR'): 'r_thumb',
+    state = {
+        k: 0
+        for k in Key
     }
     TO_NORMALIZE = {
-        ('Absolute', 'ABS_X'): MAX_JOY_VAL,
-        ('Absolute', 'ABS_Y'): MAX_JOY_VAL,
-        ('Absolute', 'ABS_RX'): MAX_JOY_VAL,
-        ('Absolute', 'ABS_RY'): MAX_JOY_VAL,
-        ('Absolute', 'ABS_Z'): MAX_TRIG_VAL,
-        ('Absolute', 'ABS_RZ'): MAX_TRIG_VAL,
+        'ABS_X': MAX_JOY_VAL,
+        'ABS_Y': MAX_JOY_VAL,
+        'ABS_RX': MAX_JOY_VAL,
+        'ABS_RY': MAX_JOY_VAL,
+        'ABS_Z': MAX_TRIG_VAL,
+        'ABS_RZ': MAX_TRIG_VAL,
     }
 
     def __init__(self):
-
-        self.A = 0
-        self.B = 0
-        self.X = 0
-        self.Y = 0
-        
-        self.H = 0
-        self.V = 0
-        
-        self.LB = 0
-        self.RB = 0
-        self.LT = 0
-        self.RT = 0
-        
-        self.start = 0
-        self.back = 0
-        self.center = 0
-        
-        self.l_stick_x = 0
-        self.l_stick_y = 0
-        self.r_stick_x = 0
-        self.r_stick_y = 0
-        self.l_thumb = 0
-        self.r_thumb = 0
-
+        self.state = {
+            k: 0
+            for k in Gamepad.Key
+        }
         self._monitor_thread = threading.Thread(target=self._monitor_controller, args=(False, 2))
         self._monitor_thread.daemon = True
         self._monitor_thread.start()
 
 
     def read(self):
-        d_pad = [self.H, self.V]
+        d_pad = [self.state[Gamepad.Key.H], self.state[Gamepad.Key.V]]
         buttons = [
-            self.A,
-            self.B,
-            self.X,
-            self.Y,
+            self.state[Gamepad.Key.A],
+            self.state[Gamepad.Key.B],
+            self.state[Gamepad.Key.X],
+            self.state[Gamepad.Key.Y],
         ]
-        special = [self.back, self.start, self.center]
+        special = [
+            self.state[Gamepad.Key.back],
+            self.state[Gamepad.Key.start],
+            self.state[Gamepad.Key.center]
+        ]
         sticks = [
-            (self.l_stick_x, self.l_stick_y, self.l_thumb), 
-            (self.r_stick_x, self.r_stick_y, self.r_thumb),
+            (self.state[Gamepad.Key.l_stick_x], self.state[Gamepad.Key.l_stick_y], self.state[Gamepad.Key.l_thumb]), 
+            (self.state[Gamepad.Key.r_stick_x], self.state[Gamepad.Key.r_stick_y], self.state[Gamepad.Key.r_thumb]),
         ]
-        upper = [self.LB, self.RB, self.LT, self.RT]
+        upper = [self.state[Gamepad.Key.LB], self.state[Gamepad.Key.RB], self.state[Gamepad.Key.LT], self.state[Gamepad.Key.RT]]
         d = locals()
         del d['self']
         return d
@@ -135,12 +135,8 @@ class LogitechController:
                 t = (ev.ev_type, ev.code)
                 if print_ev:
                     print(t)
-                if t in self.MAPPING:
+                if ev.code in Gamepad.Key:
                     state = ev.state
-                    if t in self.TO_NORMALIZE:
-                        state = round(ev.state / self.TO_NORMALIZE[(ev.ev_type, ev.code)], stick_precision)
-                    setattr(
-                        self,
-                        self.MAPPING[(ev.ev_type, ev.code)],
-                        state
-                    )
+                    if ev.code in self.TO_NORMALIZE:
+                        state = round(ev.state / self.TO_NORMALIZE[ev.code], stick_precision)
+                    self.state[Gamepad.Key(ev.code)] = state
