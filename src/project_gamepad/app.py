@@ -1,7 +1,8 @@
-import logging
+from os import getenv
 
-from controllers import Gamepad, Keyboard, Mouse
-from mappers import (
+from project_gamepad.controllers import Gamepad, Keyboard, Mouse
+from project_gamepad.log import get_logger
+from project_gamepad.mappers import (
     KeyboardButtonCombinationMapper,
     KeyboardButtonMapper,
     KeyboardDirectionMapper,
@@ -9,7 +10,7 @@ from mappers import (
     MouseDirectionMapper,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class App:
@@ -19,9 +20,6 @@ class App:
 
     def __init__(self, debug: bool = False) -> None:
         self.debug = debug
-        logging.basicConfig(
-            level=logging.DEBUG if debug else logging.INFO,
-        )
         self.gp = Gamepad()
         kb = Keyboard()
         standard_mouse = Mouse(speed_modifier=10, delay=5, sensitivity=0.01)
@@ -85,5 +83,7 @@ class App:
 
 if __name__ == "__main__":
     logger.info("Starting app")
-    app = App(debug=True)
-    app.run()
+    if getenv("APP_ENV") == "DEV":
+        App(debug=True).run()
+    else:
+        App().run()

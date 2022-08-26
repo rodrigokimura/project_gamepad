@@ -1,9 +1,8 @@
-import os
 from abc import ABC, abstractmethod
 
 from colorama import Fore, Style
 
-from controllers import Gamepad
+from project_gamepad.controllers import Gamepad
 
 
 class Printer(ABC):

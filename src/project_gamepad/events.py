@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Collection, Dict, Tuple
 
-from controllers import Gamepad
+from project_gamepad.controllers import Gamepad
 
 
 class Event(ABC):

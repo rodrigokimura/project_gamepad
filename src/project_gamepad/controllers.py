@@ -1,16 +1,16 @@
 import enum
-import logging
 import threading
 from abc import ABC, abstractmethod
 from time import sleep
 from typing import Iterable
 
+from log import get_logger
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class KeyController(ABC):
@@ -151,4 +151,5 @@ class Gamepad:
                             state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
                         self.state[Gamepad.Key(ev.code)] = state
             except Exception as e:
+                pass
                 logger.error(str(e))

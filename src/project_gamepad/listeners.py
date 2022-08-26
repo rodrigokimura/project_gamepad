@@ -1,7 +1,7 @@
 from typing import Collection
 
-from commands import Command
-from events import Event
+from project_gamepad.commands import Command
+from project_gamepad.events import Event
 
 
 class Listener:

@@ -1,10 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Collection, Tuple
 
-from commands import MovePointer, PressKey, ReleaseKey, StopPointer
-from controllers import Gamepad, Keyboard, Mouse
-from events import OnKeyPress, OnKeyRelease, OnKeyStateChange, OnStickMove, OnStickStop
-from listeners import Listener
+from project_gamepad.commands import MovePointer, PressKey, ReleaseKey, StopPointer
+from project_gamepad.controllers import Gamepad, Keyboard, Mouse
+from project_gamepad.events import (
+    OnKeyPress,
+    OnKeyRelease,
+    OnKeyStateChange,
+    OnStickMove,
+    OnStickStop,
+)
+from project_gamepad.listeners import Listener
 
 
 class KeyboardMapper(ABC):

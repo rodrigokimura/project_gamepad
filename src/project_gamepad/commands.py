@@ -2,7 +2,7 @@ import enum
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict
 
-from controllers import Keyboard, KeyController, Mouse
+from project_gamepad.controllers import Keyboard, KeyController, Mouse
 
 
 class Command(ABC):
