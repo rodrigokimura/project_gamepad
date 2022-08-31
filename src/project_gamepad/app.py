@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, wait
+import asyncio
 from os import getenv
 from typing import Dict, List
 
@@ -40,7 +40,7 @@ class App:
         for mapper in mappers:
             self.input_devices[mapper.input_device] = {}
 
-    def _monitor_input_device(self, input_device: InputController) -> None:
+    async def _monitor_input_device(self, input_device: InputController) -> None:
         while True:
             state = self.input_devices[input_device]
             current_state = input_device.read()
@@ -51,16 +51,14 @@ class App:
                 for mapper in self.mappers:
                     mapper.listen()
 
-    def start_monitors(self) -> None:
-        executor = ThreadPoolExecutor(10)
-        futures = [
-            executor.submit(self._monitor_input_device, device)
-            for device in self.input_devices
-        ]
-        wait(futures)
-
     def run(self):
-        self.start_monitors()
+        import chime
+
+        chime.success()
+        loop = asyncio.get_event_loop()
+        for device in self.input_devices:
+            loop.create_task(self._monitor_input_device(device))
+        loop.run_forever()
 
 
 if __name__ == "__main__":
@@ -128,14 +126,18 @@ if __name__ == "__main__":
         MouseButtonMapper(gp, fast_mouse, Gamepad.Key.l_thumb, Mouse.Key.right),
     ]
     gamepad_mappers = modifiers + d_pad + stick + upper_buttons + special
-    app.set_mappers(gamepad_mappers)
-    # arduino = ArduinoBoard()
-    # arduino_mappers = [
-    #     KeyboardButtonMapper(
-    #         arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_mute
-    #     )
-    # ]
-    # app.set_mappers(arduino_mappers)
-    # app.set_mappers(gamepad_mappers + arduino_mappers)
+
+    if getenv("DEVICE", "").lower() == "arduino":
+        arduino = ArduinoBoard()
+        arduino_mappers = [
+            KeyboardButtonMapper(
+                arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_mute
+            )
+        ]
+        app.set_mappers(arduino_mappers)
+    elif getenv("DEVICE", "").lower() == "gamepad":
+        app.set_mappers(gamepad_mappers)
+    else:
+        raise NotImplementedError("Device not implemented")
 
     app.run()

@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from time import sleep
 from typing import Any, Callable, Dict
 
+import chime
+
 from project_gamepad.controllers import Keyboard, KeyController, Mouse
 
 
@@ -10,6 +12,11 @@ class Command(ABC):
     @abstractmethod
     def run(self, context: Dict[str, Any]) -> None:
         ...
+
+
+class Chime(Command):
+    def run(self, context: Dict[str, Any]) -> None:
+        chime.success()
 
 
 class MovePointer(Command):
