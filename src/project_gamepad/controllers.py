@@ -7,8 +7,6 @@ from time import sleep
 from typing import Iterable, Optional
 
 import pyfirmata
-import serial
-import serial.tools.list_ports
 from log import get_logger
 from pyfirmata import Pin
 from pyfirmata.util import Iterator
@@ -16,7 +14,8 @@ from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
-from serial.serialutil import SerialException
+from serial import SerialException
+from serial.tools.list_ports import comports
 
 logger = get_logger(__name__)
 
@@ -31,7 +30,11 @@ class MetaEnum(enum.EnumMeta):
 
 
 class BaseEnum(enum.Enum, metaclass=MetaEnum):
-    pass
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
+        return str(self.name)
 
 
 class KeyController(ABC):
@@ -141,12 +144,6 @@ class Gamepad(InputController):
         l_thumb = "BTN_THUMBL"
         r_thumb = "BTN_THUMBR"
 
-        def __str__(self):
-            return str(self.value)
-
-        def __repr__(self):
-            return str(self.name)
-
     MAX_TRIG_VAL = 2**8
     MAX_JOY_VAL = 2**15
     state = {k: 0 for k in Key}
@@ -178,7 +175,6 @@ class Gamepad(InputController):
                             state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
                         self.state[Gamepad.Key(ev.code)] = state
             except Exception as e:
-                pass
                 logger.error(str(e))
 
 
@@ -207,12 +203,20 @@ class ArduinoBoard(InputController):
     def setup_board(self):
         while self.board is None:
             logger.info("Looking for Arduino boards...")
-            ports = serial.tools.list_ports.comports()
-            for port in ports:
+            for port in comports():
                 try:
                     self.board = pyfirmata.Arduino(port.device)
                     self.port = port.device
+                    if self.board.firmata_version is None:
+                        self.board = None
+                        continue
                     logger.info(f"Connected to arduino on {port.device}")
+                    logger.debug(
+                        f"Firmata version {'.'.join(map(str, self.board.firmata_version))}"
+                    )
+                    logger.debug(
+                        f"Firmware version {'.'.join(map(str, self.board.firmware_version))}"
+                    )
                     for key in ArduinoBoard.Key:
                         pin: Pin = self.board.digital[key.value]
                         pin.mode = pyfirmata.INPUT
@@ -220,3 +224,4 @@ class ArduinoBoard(InputController):
                     it.start()
                 except SerialException as ex:
                     logger.error(str(ex))
+            sleep(1)
