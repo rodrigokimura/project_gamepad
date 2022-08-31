@@ -2,6 +2,7 @@ import enum
 import threading
 import uuid
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from typing import Iterable, Optional
 
@@ -20,6 +21,19 @@ from serial.serialutil import SerialException
 logger = get_logger(__name__)
 
 
+class MetaEnum(enum.EnumMeta):
+    def __contains__(cls, item):
+        try:
+            cls(item)
+        except ValueError:
+            return False
+        return True
+
+
+class BaseEnum(enum.Enum, metaclass=MetaEnum):
+    pass
+
+
 class KeyController(ABC):
     @abstractmethod
     def press(self):
@@ -34,13 +48,13 @@ class InputController(ABC):
     id: uuid.UUID
     state: dict = {}
 
+    class Key(BaseEnum):
+        pass
+
     def __init__(self):
         self.id = uuid.uuid4()
-        self._monitor_thread = threading.Thread(
-            name=str(self), target=self._monitor_controller, args=()
-        )
-        self._monitor_thread.daemon = True
-        self._monitor_thread.start()
+        executor = ThreadPoolExecutor(10)
+        executor.submit(self._monitor_controller)
 
     def read(self):
         return self.state.copy()
@@ -103,19 +117,6 @@ class Mouse(_MouseController, KeyController):
                 sleep(self.delay / 1000)
             if not self._stopped:
                 self.move()
-
-
-class MetaEnum(enum.EnumMeta):
-    def __contains__(cls, item):
-        try:
-            cls(item)
-        except ValueError:
-            return False
-        return True
-
-
-class BaseEnum(enum.Enum, metaclass=MetaEnum):
-    pass
 
 
 class Gamepad(InputController):
