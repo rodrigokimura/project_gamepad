@@ -1,14 +1,21 @@
 import enum
 import threading
+import uuid
 from abc import ABC, abstractmethod
 from time import sleep
-from typing import Iterable
+from typing import Iterable, Optional
 
+import pyfirmata
+import serial
+import serial.tools.list_ports
 from log import get_logger
+from pyfirmata import Pin
+from pyfirmata.util import Iterator
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
+from serial.serialutil import SerialException
 
 logger = get_logger(__name__)
 
@@ -21,6 +28,32 @@ class KeyController(ABC):
     @abstractmethod
     def release(self):
         ...
+
+
+class InputController(ABC):
+    id: uuid.UUID
+    state: dict = {}
+
+    def __init__(self):
+        self.id = uuid.uuid4()
+        self._monitor_thread = threading.Thread(
+            name=str(self), target=self._monitor_controller, args=()
+        )
+        self._monitor_thread.daemon = True
+        self._monitor_thread.start()
+
+    def read(self):
+        return self.state.copy()
+
+    @abstractmethod
+    def _monitor_controller(self):
+        ...
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.id})"
 
 
 class Keyboard(_KeyboardController, KeyController):
@@ -85,7 +118,7 @@ class BaseEnum(enum.Enum, metaclass=MetaEnum):
     pass
 
 
-class Gamepad:
+class Gamepad(InputController):
     class Key(BaseEnum):
         A = "BTN_SOUTH"
         B = "BTN_EAST"
@@ -127,14 +160,7 @@ class Gamepad:
 
     def __init__(self):
         self.state = {k: 0 for k in Gamepad.Key}
-        self._monitor_thread = threading.Thread(
-            name=str(self), target=self._monitor_controller, args=()
-        )
-        self._monitor_thread.daemon = True
-        self._monitor_thread.start()
-
-    def read(self):
-        return self.state.copy()
+        super().__init__()
 
     def _monitor_controller(self) -> None:
 
@@ -153,3 +179,43 @@ class Gamepad:
             except Exception as e:
                 pass
                 logger.error(str(e))
+
+
+class ArduinoBoard(InputController):
+    port: Optional[str]
+    board: Optional[pyfirmata.Arduino]
+
+    class Key(BaseEnum):
+        PIN_2 = 2
+
+    def __init__(self):
+        self.state = {k: 0 for k in ArduinoBoard.Key}
+        self.board = None
+        super().__init__()
+
+    def _monitor_controller(self) -> None:
+        while True:
+            self.setup_board()
+            for key in ArduinoBoard.Key:
+                try:
+                    pin: Pin = self.board.digital[key.value]
+                    self.state[key] = pin.read()
+                except Exception as e:
+                    logger.error(str(e))
+
+    def setup_board(self):
+        while self.board is None:
+            logger.info("Looking for Arduino boards...")
+            ports = serial.tools.list_ports.comports()
+            for port in ports:
+                try:
+                    self.board = pyfirmata.Arduino(port.device)
+                    self.port = port.device
+                    logger.info(f"Connected to arduino on {port.device}")
+                    for key in ArduinoBoard.Key:
+                        pin: Pin = self.board.digital[key.value]
+                        pin.mode = pyfirmata.INPUT
+                    it = Iterator(self.board)
+                    it.start()
+                except SerialException as ex:
+                    logger.error(str(ex))

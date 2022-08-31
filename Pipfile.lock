@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3f061de0f7db298fc51a53b5cb7babee6493e3dcb5c489072770e722ec6205a8"
+            "sha256": "54db6898a6e00adb65b11dec82c325cd73f7ae6c83e27ca96afd3bab1c6cc4d3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -39,6 +39,14 @@
             "index": "pypi",
             "version": "==0.5"
         },
+        "pyfirmata": {
+            "hashes": [
+                "sha256:03091ffd0b06a483d286d9738ead97a50c55cf1bf6b89a5bd0c420d0a7797420",
+                "sha256:cc180d1b30c85a2bbca62c15fef1b871db048cdcfa80959968356d97bd3ff08e"
+            ],
+            "index": "pypi",
+            "version": "==1.1.0"
+        },
         "pynput": {
             "hashes": [
                 "sha256:19861b2a0c430d646489852f89500e0c9332e295f2c020e7c2775e7046aa2e2f",
@@ -47,6 +55,13 @@
             ],
             "index": "pypi",
             "version": "==1.7.6"
+        },
+        "pyserial": {
+            "hashes": [
+                "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb",
+                "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"
+            ],
+            "version": "==3.5"
         },
         "python-xlib": {
             "hashes": [
