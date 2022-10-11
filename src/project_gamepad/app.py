@@ -101,13 +101,13 @@ if __name__ == "__main__":
             gp,
             kb,
             Gamepad.Key.LB,
-            [Keyboard.Key.ctrl, Keyboard.Key.f1],
+            [Keyboard.Key.ctrl, Keyboard.Key.cmd, Keyboard.Key.f1],
         ),
         KeyboardButtonCombinationMapper(
             gp,
             kb,
             Gamepad.Key.RB,
-            [Keyboard.Key.ctrl, Keyboard.Key.f2],
+            [Keyboard.Key.ctrl, Keyboard.Key.cmd, Keyboard.Key.f2],
         ),
     ]
 
