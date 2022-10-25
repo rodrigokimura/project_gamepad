@@ -7,12 +7,9 @@ name = "pypi"
 inputs = "*"
 pynput = "*"
 colorama = "*"
-pyfirmata = "*"
 chime = "*"
+pymata = "*"
 
 [dev-packages]
 black = "*"
 isort = "*"
-
-[requires]
-python_version = "3.9"

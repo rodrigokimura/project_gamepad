@@ -4,12 +4,10 @@ import uuid
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
-import pyfirmata
 from log import get_logger
-from pyfirmata import Pin
-from pyfirmata.util import Iterator
+from PyMata.pymata import PyMata
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
@@ -79,7 +77,7 @@ class Keyboard(_KeyboardController, KeyController):
 
     def __init__(self) -> None:
         super().__init__()
-        self.Key = _KeyboardKey
+        self.Key = Union[_KeyboardKey, str]
 
 
 class Mouse(_MouseController, KeyController):
@@ -180,7 +178,7 @@ class Gamepad(InputController):
 
 class ArduinoBoard(InputController):
     port: Optional[str]
-    board: Optional[pyfirmata.Arduino]
+    board: Optional[PyMata]
 
     class Key(BaseEnum):
         PIN_2 = 2
@@ -193,35 +191,31 @@ class ArduinoBoard(InputController):
     def _monitor_controller(self) -> None:
         while True:
             self.setup_board()
-            for key in ArduinoBoard.Key:
-                try:
-                    pin: Pin = self.board.digital[key.value]
-                    self.state[key] = pin.read()
-                except Exception as e:
-                    logger.error(str(e))
 
     def setup_board(self):
         while self.board is None:
             logger.info("Looking for Arduino boards...")
             for port in comports():
                 try:
-                    self.board = pyfirmata.Arduino(port.device)
+                    self.board = PyMata(port.device)
                     self.port = port.device
-                    if self.board.firmata_version is None:
+                    if self.board.get_firmata_version() is None:
                         self.board = None
                         continue
                     logger.info(f"Connected to arduino on {port.device}")
                     logger.debug(
-                        f"Firmata version {'.'.join(map(str, self.board.firmata_version))}"
+                        f"Firmata version {'.'.join(map(str, self.board.get_firmata_version()))}"
                     )
                     logger.debug(
-                        f"Firmware version {'.'.join(map(str, self.board.firmware_version))}"
+                        f"Firmware version {'.'.join(map(str, self.board.get_firmata_firmware_version()))}"
                     )
                     for key in ArduinoBoard.Key:
-                        pin: Pin = self.board.digital[key.value]
-                        pin.mode = pyfirmata.INPUT
-                    it = Iterator(self.board)
-                    it.start()
+                        self.board.set_pin_mode(
+                            key.value, PyMata.INPUT, PyMata.DIGITAL, cb=self._callback
+                        )
                 except SerialException as ex:
                     logger.error(str(ex))
             sleep(1)
+
+    def _callback(self, data):
+        self.state[ArduinoBoard.Key(data[1])] = data[2]
