@@ -17,6 +17,7 @@ from project_gamepad.mappers import (
     Mapper,
     MouseButtonMapper,
     MouseDirectionMapper,
+    RotaryEncoderMapper,
 )
 
 logger = get_logger(__name__)
@@ -132,7 +133,13 @@ if __name__ == "__main__":
         arduino_mappers = [
             KeyboardButtonMapper(
                 arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_mute
-            )
+            ),
+            # KeyboardButtonMapper(
+            #     arduino, kb, ArduinoBoard.Key.PIN_8, Keyboard.Key.media_volume_mute
+            # ),
+            # RotaryEncoderMapper(
+            #     arduino, kb, ArduinoBoard.Key.PIN_10, ArduinoBoard.Key.PIN_11, Keyboard.Key.media_volume_up,Keyboard.Key.media_volume_down
+            # ),
         ]
         app.set_mappers(arduino_mappers)
     elif getenv("DEVICE", "").lower() == "gamepad":

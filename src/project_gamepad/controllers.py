@@ -13,7 +13,7 @@ from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
 from serial import SerialException
-from serial.tools.list_ports import comports
+from telemetrix import telemetrix
 
 logger = get_logger(__name__)
 
@@ -195,26 +195,18 @@ class ArduinoBoard(InputController):
     def setup_board(self):
         while self.board is None:
             logger.info("Looking for Arduino boards...")
-            for port in comports():
-                try:
-                    self.board = PyMata(port.device)
-                    self.port = port.device
-                    if self.board.get_firmata_version() is None:
-                        self.board = None
-                        continue
-                    logger.info(f"Connected to arduino on {port.device}")
-                    logger.debug(
-                        f"Firmata version {'.'.join(map(str, self.board.get_firmata_version()))}"
+            try:
+                self.board = telemetrix.Telemetrix()
+                for key in ArduinoBoard.Key:
+                    self.board.set_pin_mode_digital_input(
+                        key.value, callback=self._callback
                     )
-                    logger.debug(
-                        f"Firmware version {'.'.join(map(str, self.board.get_firmata_firmware_version()))}"
-                    )
-                    for key in ArduinoBoard.Key:
-                        self.board.set_pin_mode(
-                            key.value, PyMata.INPUT, PyMata.DIGITAL, cb=self._callback
-                        )
-                except SerialException as ex:
-                    logger.error(str(ex))
+            except SerialException as ex:
+                logger.error(str(ex))
+            except Exception as ex:
+                logger.error(str(ex))
+                self.board.shutdown()
+                self.board = None
             sleep(1)
 
     def _callback(self, data):

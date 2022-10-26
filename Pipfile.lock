@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "79507760fbbb1c1e59abbdaa7ddcc9e64ccdc51278f927da8739a289d5fdee07"
+            "sha256": "19835e7ea38936d4d3051f0e688ef818a59d89039d233467d0c29fbcbf4e587b"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -45,14 +45,6 @@
             "index": "pypi",
             "version": "==0.5"
         },
-        "pymata": {
-            "hashes": [
-                "sha256:3a8d16aba2c4eedde10d4f4d21932333f80d3e269a34824430f4f1291a0fb618",
-                "sha256:b6b38fecd18176919caf2366bf6b361a6215115baaad323c642d9ed5eeaad254"
-            ],
-            "index": "pypi",
-            "version": "==2.20"
-        },
         "pynput": {
             "hashes": [
                 "sha256:19861b2a0c430d646489852f89500e0c9332e295f2c020e7c2775e7046aa2e2f",
@@ -84,6 +76,14 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==1.16.0"
+        },
+        "telemetrix": {
+            "hashes": [
+                "sha256:4bd849aa4fa32f385ff9953e23f6f53466f857e4430b6e0ddeb531001a15af1a",
+                "sha256:e75d2c68f1388b74980a0a34f04bc14e3b1e08ffd47bd79c227486ddbdafa6a8"
+            ],
+            "index": "pypi",
+            "version": "==1.10"
         }
     },
     "develop": {

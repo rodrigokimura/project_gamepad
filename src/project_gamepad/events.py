@@ -79,3 +79,29 @@ class OnKeyRelease(OnKeyStateChange):
     def __init__(self, input_device, keys) -> None:
         state = 0
         super().__init__(input_device, keys, state)
+
+
+class OnRotation(Event):
+    context = {}
+
+    def __init__(self, input_device, dt_key, clk_key) -> None:
+        self.input_device = input_device
+        self.dt_key = dt_key
+        self.clk_key = clk_key
+
+    def is_set(self) -> bool:
+        return self.input_device.state[self.clk_key] == 1
+
+
+class OnClockWiseRotation(OnRotation):
+    def is_set(self) -> bool:
+        clk = self.input_device.state[self.clk_key]
+        dt = self.input_device.state[self.dt_key]
+        return super().is_set() and clk == dt
+
+
+class OnCounterClockWiseRotation(OnRotation):
+    def is_set(self) -> bool:
+        clk = self.input_device.state[self.clk_key]
+        dt = self.input_device.state[self.dt_key]
+        return super().is_set() and clk != dt

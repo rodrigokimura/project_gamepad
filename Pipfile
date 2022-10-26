@@ -8,7 +8,7 @@ inputs = "*"
 pynput = "*"
 colorama = "*"
 chime = "*"
-pymata = "*"
+telemetrix = "*"
 
 [dev-packages]
 black = "*"
