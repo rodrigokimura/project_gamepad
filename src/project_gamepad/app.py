@@ -132,14 +132,20 @@ if __name__ == "__main__":
         arduino = ArduinoBoard()
         arduino_mappers = [
             KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_mute
+                arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_down
             ),
-            # KeyboardButtonMapper(
-            #     arduino, kb, ArduinoBoard.Key.PIN_8, Keyboard.Key.media_volume_mute
-            # ),
-            # RotaryEncoderMapper(
-            #     arduino, kb, ArduinoBoard.Key.PIN_10, ArduinoBoard.Key.PIN_11, Keyboard.Key.media_volume_up,Keyboard.Key.media_volume_down
-            # ),
+            KeyboardButtonMapper(
+                arduino, kb, ArduinoBoard.Key.PIN_3, Keyboard.Key.media_volume_up
+            ),
+            KeyboardButtonMapper(
+                arduino, kb, ArduinoBoard.Key.PIN_4, Keyboard.Key.media_previous
+            ),
+            KeyboardButtonMapper(
+                arduino, kb, ArduinoBoard.Key.PIN_5, Keyboard.Key.media_next
+            ),
+            KeyboardButtonMapper(
+                arduino, kb, ArduinoBoard.Key.PIN_6, Keyboard.Key.media_play_pause
+            ),
         ]
         app.set_mappers(arduino_mappers)
     elif getenv("DEVICE", "").lower() == "gamepad":

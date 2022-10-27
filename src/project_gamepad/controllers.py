@@ -7,7 +7,6 @@ from time import sleep
 from typing import Iterable, Optional, Union
 
 from log import get_logger
-from PyMata.pymata import PyMata
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
@@ -178,10 +177,14 @@ class Gamepad(InputController):
 
 class ArduinoBoard(InputController):
     port: Optional[str]
-    board: Optional[PyMata]
+    board: Optional[telemetrix.Telemetrix]
 
     class Key(BaseEnum):
         PIN_2 = 2
+        PIN_3 = 3
+        PIN_4 = 4
+        PIN_5 = 5
+        PIN_6 = 6
 
     def __init__(self):
         self.state = {k: 0 for k in ArduinoBoard.Key}
