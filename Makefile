@@ -7,3 +7,6 @@ run:
 lint:
 	@pipenv run isort .
 	@pipenv run black .
+
+qa:
+	@pipenv run pytest

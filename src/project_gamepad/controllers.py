@@ -6,11 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from typing import Iterable, Union
 
-from log import get_logger
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
+
+from project_gamepad.log import get_logger
 
 logger = get_logger(__name__)
 
