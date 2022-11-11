@@ -1,6 +1,9 @@
 import enum
 from abc import ABC, abstractmethod
+from time import sleep
 from typing import Any, Callable, Dict
+
+import chime
 
 from project_gamepad.controllers import Keyboard, KeyController, Mouse
 
@@ -9,6 +12,11 @@ class Command(ABC):
     @abstractmethod
     def run(self, context: Dict[str, Any]) -> None:
         ...
+
+
+class Chime(Command):
+    def run(self, context: Dict[str, Any]) -> None:
+        chime.success()
 
 
 class MovePointer(Command):
@@ -48,3 +56,11 @@ class PressKey(KeyCommand):
 class ReleaseKey(KeyCommand):
     def __init__(self, controller: KeyController, key: enum.Enum):
         super().__init__(controller.release, key)
+
+
+class Sleep(Command):
+    def __init__(self, seconds: int):
+        self.seconds = seconds
+
+    def run(self, context: Dict[str, Any]) -> None:
+        sleep(self.seconds)

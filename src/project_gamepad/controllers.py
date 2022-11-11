@@ -1,16 +1,36 @@
 import enum
 import threading
+import uuid
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Iterable
+from typing import Iterable, Union
 
-from log import get_logger
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
 
+from project_gamepad.log import get_logger
+
 logger = get_logger(__name__)
+
+
+class MetaEnum(enum.EnumMeta):
+    def __contains__(cls, item):
+        try:
+            cls(item)
+        except ValueError:
+            return False
+        return True
+
+
+class BaseEnum(enum.Enum, metaclass=MetaEnum):
+    def __str__(self):
+        return str(self.value)
+
+    def __repr__(self):
+        return str(self.name)
 
 
 class KeyController(ABC):
@@ -23,13 +43,39 @@ class KeyController(ABC):
         ...
 
 
+class InputController(ABC):
+    id: uuid.UUID
+    state: dict = {}
+
+    class Key(BaseEnum):
+        pass
+
+    def __init__(self):
+        self.id = uuid.uuid4()
+        executor = ThreadPoolExecutor(10)
+        executor.submit(self._monitor_controller)
+
+    def read(self):
+        return self.state.copy()
+
+    @abstractmethod
+    def _monitor_controller(self):
+        ...
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.id})"
+
+
 class Keyboard(_KeyboardController, KeyController):
 
     Key = _KeyboardKey
 
     def __init__(self) -> None:
         super().__init__()
-        self.Key = _KeyboardKey
+        self.Key = Union[_KeyboardKey, str]
 
 
 class Mouse(_MouseController, KeyController):
@@ -72,20 +118,7 @@ class Mouse(_MouseController, KeyController):
                 self.move()
 
 
-class MetaEnum(enum.EnumMeta):
-    def __contains__(cls, item):
-        try:
-            cls(item)
-        except ValueError:
-            return False
-        return True
-
-
-class BaseEnum(enum.Enum, metaclass=MetaEnum):
-    pass
-
-
-class Gamepad:
+class Gamepad(InputController):
     class Key(BaseEnum):
         A = "BTN_SOUTH"
         B = "BTN_EAST"
@@ -107,12 +140,6 @@ class Gamepad:
         l_thumb = "BTN_THUMBL"
         r_thumb = "BTN_THUMBR"
 
-        def __str__(self):
-            return str(self.value)
-
-        def __repr__(self):
-            return str(self.name)
-
     MAX_TRIG_VAL = 2**8
     MAX_JOY_VAL = 2**15
     state = {k: 0 for k in Key}
@@ -127,14 +154,7 @@ class Gamepad:
 
     def __init__(self):
         self.state = {k: 0 for k in Gamepad.Key}
-        self._monitor_thread = threading.Thread(
-            name=str(self), target=self._monitor_controller, args=()
-        )
-        self._monitor_thread.daemon = True
-        self._monitor_thread.start()
-
-    def read(self):
-        return self.state.copy()
+        super().__init__()
 
     def _monitor_controller(self) -> None:
 
@@ -151,5 +171,4 @@ class Gamepad:
                             state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
                         self.state[Gamepad.Key(ev.code)] = state
             except Exception as e:
-                pass
                 logger.error(str(e))
