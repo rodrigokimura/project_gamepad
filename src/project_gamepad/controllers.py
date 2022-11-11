@@ -6,12 +6,28 @@ from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from typing import Iterable, Union
 
-from pynput.keyboard import Controller as _KeyboardController
-from pynput.keyboard import Key as _KeyboardKey
-from pynput.mouse import Button as _MouseKey
-from pynput.mouse import Controller as _MouseController
-
 from project_gamepad.log import get_logger
+
+# HACK: workaround to run tests in the CI environment
+try:
+    from pynput.keyboard import Controller as _KeyboardController
+    from pynput.keyboard import Key as _KeyboardKey
+    from pynput.mouse import Button as _MouseKey
+    from pynput.mouse import Controller as _MouseController
+except ImportError:
+
+    class _KeyboardController:
+        pass
+
+    class _KeyboardKey:
+        pass
+
+    class _MouseKey:
+        pass
+
+    class _MouseController:
+        pass
+
 
 logger = get_logger(__name__)
 
