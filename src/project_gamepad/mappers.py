@@ -8,16 +8,8 @@ from project_gamepad.commands import (
     Sleep,
     StopPointer,
 )
-from project_gamepad.controllers import (
-    ArduinoBoard,
-    Gamepad,
-    InputController,
-    Keyboard,
-    Mouse,
-)
+from project_gamepad.controllers import Gamepad, InputController, Keyboard, Mouse
 from project_gamepad.events import (
-    OnClockWiseRotation,
-    OnCounterClockWiseRotation,
     OnKeyPress,
     OnKeyRelease,
     OnKeyStateChange,
@@ -73,30 +65,6 @@ class KeyboardButtonMapper(KeyboardMapper):
         self._listeners = [
             Listener(OnKeyPress(input_device, [gp_key]), [PressKey(kb, kb_key)]),
             Listener(OnKeyRelease(input_device, [gp_key]), [ReleaseKey(kb, kb_key)]),
-        ]
-
-
-class RotaryEncoderMapper(KeyboardMapper):
-    def __init__(
-        self,
-        input_device: ArduinoBoard,
-        kb: Keyboard,
-        dt_pin: ArduinoBoard.Key,
-        clk_pin: ArduinoBoard.Key,
-        cw_key: Keyboard.Key,
-        ccw_key: Keyboard.Key,
-    ) -> None:
-        DELAY = 0.5
-        super().__init__(input_device, kb)
-        self._listeners = [
-            Listener(
-                OnClockWiseRotation(input_device, dt_pin, clk_pin),
-                [PressKey(kb, cw_key), Sleep(DELAY), ReleaseKey(kb, cw_key)],
-            ),
-            Listener(
-                OnCounterClockWiseRotation(input_device, dt_pin, clk_pin),
-                [PressKey(kb, ccw_key), Sleep(DELAY), ReleaseKey(kb, ccw_key)],
-            ),
         ]
 
 

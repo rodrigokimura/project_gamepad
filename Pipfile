@@ -8,8 +8,8 @@ inputs = "*"
 pynput = "*"
 colorama = "*"
 chime = "*"
-telemetrix = "*"
 
 [dev-packages]
 black = "*"
 isort = "*"
+pytest = "*"

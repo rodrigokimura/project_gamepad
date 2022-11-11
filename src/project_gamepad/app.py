@@ -2,13 +2,7 @@ import asyncio
 from os import getenv
 from typing import Dict, List
 
-from project_gamepad.controllers import (
-    ArduinoBoard,
-    Gamepad,
-    InputController,
-    Keyboard,
-    Mouse,
-)
+from project_gamepad.controllers import Gamepad, InputController, Keyboard, Mouse
 from project_gamepad.log import get_logger
 from project_gamepad.mappers import (
     KeyboardButtonCombinationMapper,
@@ -17,7 +11,6 @@ from project_gamepad.mappers import (
     Mapper,
     MouseButtonMapper,
     MouseDirectionMapper,
-    RotaryEncoderMapper,
 )
 
 logger = get_logger(__name__)
@@ -126,31 +119,8 @@ if __name__ == "__main__":
         ),
         MouseButtonMapper(gp, fast_mouse, Gamepad.Key.l_thumb, Mouse.Key.right),
     ]
+
     gamepad_mappers = modifiers + d_pad + stick + upper_buttons + special
 
-    if getenv("DEVICE", "").lower() == "arduino":
-        arduino = ArduinoBoard()
-        arduino_mappers = [
-            KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_2, Keyboard.Key.media_volume_down
-            ),
-            KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_3, Keyboard.Key.media_volume_up
-            ),
-            KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_4, Keyboard.Key.media_previous
-            ),
-            KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_5, Keyboard.Key.media_next
-            ),
-            KeyboardButtonMapper(
-                arduino, kb, ArduinoBoard.Key.PIN_6, Keyboard.Key.media_play_pause
-            ),
-        ]
-        app.set_mappers(arduino_mappers)
-    elif getenv("DEVICE", "").lower() == "gamepad":
-        app.set_mappers(gamepad_mappers)
-    else:
-        raise NotImplementedError("Device not implemented")
-
+    app.set_mappers(gamepad_mappers)
     app.run()

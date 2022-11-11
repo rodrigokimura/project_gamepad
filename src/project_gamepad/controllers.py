@@ -4,15 +4,13 @@ import uuid
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Iterable, Optional, Union
+from typing import Iterable, Union
 
 from log import get_logger
 from pynput.keyboard import Controller as _KeyboardController
 from pynput.keyboard import Key as _KeyboardKey
 from pynput.mouse import Button as _MouseKey
 from pynput.mouse import Controller as _MouseController
-from serial import SerialException
-from telemetrix import telemetrix
 
 logger = get_logger(__name__)
 
@@ -173,44 +171,3 @@ class Gamepad(InputController):
                         self.state[Gamepad.Key(ev.code)] = state
             except Exception as e:
                 logger.error(str(e))
-
-
-class ArduinoBoard(InputController):
-    port: Optional[str]
-    board: Optional[telemetrix.Telemetrix]
-
-    class Key(BaseEnum):
-        PIN_2 = 2
-        PIN_3 = 3
-        PIN_4 = 4
-        PIN_5 = 5
-        PIN_6 = 6
-
-    def __init__(self):
-        self.state = {k: 0 for k in ArduinoBoard.Key}
-        self.board = None
-        super().__init__()
-
-    def _monitor_controller(self) -> None:
-        while True:
-            self.setup_board()
-
-    def setup_board(self):
-        while self.board is None:
-            logger.info("Looking for Arduino boards...")
-            try:
-                self.board = telemetrix.Telemetrix()
-                for key in ArduinoBoard.Key:
-                    self.board.set_pin_mode_digital_input(
-                        key.value, callback=self._callback
-                    )
-            except SerialException as ex:
-                logger.error(str(ex))
-            except Exception as ex:
-                logger.error(str(ex))
-                self.board.shutdown()
-                self.board = None
-            sleep(1)
-
-    def _callback(self, data):
-        self.state[ArduinoBoard.Key(data[1])] = data[2]
