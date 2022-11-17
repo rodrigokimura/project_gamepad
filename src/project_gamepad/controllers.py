@@ -7,27 +7,12 @@ from time import sleep
 from typing import Iterable, Union
 
 from project_gamepad.log import get_logger
-
-# HACK: workaround to run tests in the CI environment
-try:
-    from pynput.keyboard import Controller as _KeyboardController
-    from pynput.keyboard import Key as _KeyboardKey
-    from pynput.mouse import Button as _MouseKey
-    from pynput.mouse import Controller as _MouseController
-except ImportError:
-
-    class _KeyboardController:
-        pass
-
-    class _KeyboardKey:
-        pass
-
-    class _MouseKey:
-        pass
-
-    class _MouseController:
-        pass
-
+from project_gamepad.wrappers.output_devices import (
+    KeyboardController,
+    KeyboardKey,
+    MouseController,
+    MouseKey,
+)
 
 logger = get_logger(__name__)
 
@@ -85,18 +70,18 @@ class InputController(ABC):
         return f"{self.__class__.__name__}({self.id})"
 
 
-class Keyboard(_KeyboardController, KeyController):
+class Keyboard(KeyboardController, KeyController):
 
-    Key = _KeyboardKey
+    Key = KeyboardKey
 
     def __init__(self) -> None:
         super().__init__()
-        self.Key = Union[_KeyboardKey, str]
+        self.Key = Union[KeyboardKey, str]
 
 
-class Mouse(_MouseController, KeyController):
+class Mouse(MouseController, KeyController):
 
-    Key = _MouseKey
+    Key = MouseKey
 
     def __init__(
         self, sensitivity: float = 0.01, delay: int = 5, speed_modifier: int = 20
