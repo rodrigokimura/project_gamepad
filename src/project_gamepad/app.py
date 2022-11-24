@@ -5,7 +5,13 @@ from typing import Dict, List
 
 import chime
 
-from project_gamepad.controllers import Gamepad, InputController, Keyboard, Mouse
+from project_gamepad.controllers import (
+    Gamepad,
+    InputController,
+    Keyboard,
+    MonitorableDevice,
+    Mouse,
+)
 from project_gamepad.log import get_logger
 from project_gamepad.mappers import (
     KeyboardButtonCombinationMapper,
@@ -24,6 +30,7 @@ class App:
     debug: bool
     stopped: bool
     mappers: List[Mapper]
+    devices_to_stop_monitoring: List[MonitorableDevice] = []
 
     def __init__(self, debug: bool = False) -> None:
         self.debug = debug
@@ -59,6 +66,13 @@ class App:
     def stop(self) -> None:
         self.stopped = True
 
+    def destroy(self) -> None:
+        self.stop()
+        for input_device in self.input_devices:
+            input_device.stop()
+        for device in self.devices_to_stop_monitoring:
+            device.stop_monitoring()
+
 
 def create_app() -> App:
     app = App(debug=getenv("APP_ENV") == "DEV")
@@ -66,6 +80,8 @@ def create_app() -> App:
     kb = Keyboard()
     standard_mouse = Mouse(speed_modifier=10, delay=5, sensitivity=0.01)
     fast_mouse = Mouse(speed_modifier=50, delay=1, sensitivity=0.01)
+
+    app.devices_to_stop_monitoring = [standard_mouse, fast_mouse]
 
     modifiers = [
         KeyboardButtonMapper(gp, kb, Gamepad.Key.A, Keyboard.Key.ctrl),
@@ -139,6 +155,11 @@ def stop_app(app: App):
     app.stop()
 
 
+def destroy_app(app: App, tk: Tk):
+    app.destroy()
+    tk.destroy()
+
+
 def main():
     app = create_app()
 
@@ -157,14 +178,9 @@ def main():
     ).grid(column=0, row=1)
     ttk.Button(
         frm,
-        text="Stop",
-        command=lambda: app.stop(),
-    ).grid(column=0, row=2)
-    ttk.Button(
-        frm,
         text="Exit",
-        command=lambda: root.destroy(),
-    ).grid(column=0, row=3)
+        command=lambda: destroy_app(app, root),
+    ).grid(column=0, row=4)
 
     root.mainloop()
 
