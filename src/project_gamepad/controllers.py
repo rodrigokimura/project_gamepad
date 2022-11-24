@@ -46,6 +46,7 @@ class KeyController(ABC):
 
 class InputController(ABC):
     id: uuid.UUID
+    monitoring: bool = True
     state: dict = {}
 
     class Key(BaseEnum):
@@ -53,8 +54,8 @@ class InputController(ABC):
 
     def __init__(self):
         self.id = uuid.uuid4()
-        executor = ThreadPoolExecutor(10)
-        executor.submit(self._monitor_controller)
+        self.executor = ThreadPoolExecutor(10)
+        self.executor.submit(self.monitor_controller)
 
     def read(self):
         return self.state.copy()
@@ -62,6 +63,14 @@ class InputController(ABC):
     @abstractmethod
     def _monitor_controller(self):
         ...
+
+    def monitor_controller(self):
+        while self.monitoring:
+            self._monitor_controller()
+
+    def stop(self):
+        self.monitoring = False
+        self.executor.shutdown(wait=False)
 
     def __hash__(self):
         return hash(self.id)
@@ -79,7 +88,14 @@ class Keyboard(KeyboardController, KeyController):
         self.Key = Union[KeyboardKey, str]
 
 
-class Mouse(MouseController, KeyController):
+class MonitorableDevice:
+    monitoring: bool = True
+
+    def stop_monitoring(self):
+        self.monitoring = False
+
+
+class Mouse(MouseController, KeyController, MonitorableDevice):
 
     Key = MouseKey
 
@@ -112,7 +128,7 @@ class Mouse(MouseController, KeyController):
         )
 
     def _monitor_controller(self) -> None:
-        while True:
+        while self.monitoring:
             if self.delay:
                 sleep(self.delay / 1000)
             if not self._stopped:
@@ -158,18 +174,16 @@ class Gamepad(InputController):
         super().__init__()
 
     def _monitor_controller(self) -> None:
+        try:
+            from inputs import InputEvent, get_gamepad
 
-        while True:
-            try:
-                from inputs import InputEvent, get_gamepad
-
-                events: Iterable[InputEvent] = get_gamepad()
-                for ev in events:
-                    logger.debug("Event: %s:%s:%s", ev.ev_type, ev.code, ev.state)
-                    if ev.code in Gamepad.Key:
-                        state = ev.state
-                        if ev.code in self.TO_NORMALIZE:
-                            state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
-                        self.state[Gamepad.Key(ev.code)] = state
-            except Exception as e:
-                logger.error(str(e))
+            events: Iterable[InputEvent] = get_gamepad()
+            for ev in events:
+                logger.debug("Event: %s:%s:%s", ev.ev_type, ev.code, ev.state)
+                if ev.code in Gamepad.Key:
+                    state = ev.state
+                    if ev.code in self.TO_NORMALIZE:
+                        state = round(ev.state / self.TO_NORMALIZE[ev.code], 2)
+                    self.state[Gamepad.Key(ev.code)] = state
+        except Exception as e:
+            logger.error(str(e))
