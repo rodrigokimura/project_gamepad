@@ -1,6 +1,9 @@
-import asyncio
 from os import getenv
+from threading import Thread
+from tkinter import Tk, ttk
 from typing import Dict, List
+
+import chime
 
 from project_gamepad.controllers import Gamepad, InputController, Keyboard, Mouse
 from project_gamepad.log import get_logger
@@ -19,6 +22,7 @@ logger = get_logger(__name__)
 class App:
     input_devices: Dict[InputController, dict]
     debug: bool
+    stopped: bool
     mappers: List[Mapper]
 
     def __init__(self, debug: bool = False) -> None:
@@ -34,8 +38,8 @@ class App:
         for mapper in mappers:
             self.input_devices[mapper.input_device] = {}
 
-    async def _monitor_input_device(self, input_device: InputController) -> None:
-        while True:
+    def _monitor_input_device(self, input_device: InputController) -> None:
+        while self.stopped is False:
             state = self.input_devices[input_device]
             current_state = input_device.read()
             if state != current_state:
@@ -45,18 +49,18 @@ class App:
                 for mapper in self.mappers:
                     mapper.listen()
 
-    def run(self):
-        import chime
+    def run(self) -> None:
+        self.stopped = False
 
         chime.success()
-        loop = asyncio.get_event_loop()
-        for device in self.input_devices:
-            loop.create_task(self._monitor_input_device(device))
-        loop.run_forever()
+        input_device = next(iter(self.input_devices))
+        self._monitor_input_device(input_device)
+
+    def stop(self) -> None:
+        self.stopped = True
 
 
-if __name__ == "__main__":
-    logger.info("Starting app")
+def create_app() -> App:
     app = App(debug=getenv("APP_ENV") == "DEV")
     gp = Gamepad()
     kb = Keyboard()
@@ -123,4 +127,48 @@ if __name__ == "__main__":
     gamepad_mappers = modifiers + d_pad + stick + upper_buttons + special
 
     app.set_mappers(gamepad_mappers)
-    app.run()
+    return app
+
+
+def start_app(app: App):
+    main_thread = Thread(target=lambda: app.run(), name="start_app")
+    main_thread.start()
+
+
+def stop_app(app: App):
+    app.stop()
+
+
+def main():
+    app = create_app()
+
+    root = Tk()
+
+    style = ttk.Style(root)
+    style.theme_use("clam")
+
+    frm = ttk.Frame(root, padding=10)
+    frm.pack()
+
+    ttk.Button(
+        frm,
+        text="Start",
+        command=lambda: start_app(app),
+    ).grid(column=0, row=1)
+    ttk.Button(
+        frm,
+        text="Stop",
+        command=lambda: app.stop(),
+    ).grid(column=0, row=2)
+    ttk.Button(
+        frm,
+        text="Exit",
+        command=lambda: root.destroy(),
+    ).grid(column=0, row=3)
+
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    logger.info("Starting app")
+    main()
